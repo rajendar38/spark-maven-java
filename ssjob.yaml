@@ -1,0 +1,23 @@
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: helloworld-java
+  namespace: default
+spec:
+  type: Java
+  mode: cluster
+  image: rajendar38/spark-helloworld-java:latest
+  imagePullPolicy: IfNotPresent
+  mainClass: com.example.HelloWorld
+  mainApplicationFile: local:///opt/spark/examples/jars/helloworld-java.jar
+  sparkVersion: 3.4.0
+  restartPolicy:
+    type: Never
+  driver:
+    cores: 1
+    memory: 512m
+    serviceAccount: spark-operator-spark
+  executor:
+    instances: 2
+    cores: 1
+    memory: 512m
