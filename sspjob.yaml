@@ -10,7 +10,7 @@ spec:
   template:
     type: Java
     mode: cluster
-    image: rajendar38/spark-helloworld-java:latest
+    image: rajendar38/complexsparkapp:latest
     imagePullPolicy: IfNotPresent
     mainClass: com.example.HelloWorld
     mainApplicationFile: local:///opt/spark/examples/jars/helloworld-java.jar

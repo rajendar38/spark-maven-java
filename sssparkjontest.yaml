@@ -1,0 +1,66 @@
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: ScheduledSparkApplication
+metadata:
+  name: helloworld-java-scheduled2
+
+spec:
+  schedule: "@every 1m"
+  concurrencyPolicy: Forbid
+  template:
+    volumes:
+      - name: jvm-tmp
+        emptyDir:
+          sizeLimit: 750Mi
+      - name: spark-ivy
+        emptyDir:
+          sizeLimit: 750Mi
+    type: Java
+    mode: cluster
+    image: rajendar38/complexsparkapp:latest
+    imagePullPolicy: IfNotPresent
+    mainClass: com.example.HelloWorld
+    mainApplicationFile: local:///opt/spark/examples/jars/helloworld-java.jar
+    sparkVersion: 3.4.0
+    restartPolicy:
+      type: Never
+    driver:
+      memory: 512m
+      serviceAccount: spark-operator-spark
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 6215
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+      volumeMounts:
+        - name: spark-ivy
+          mountPath: /home/spark/.ivy2
+          subPath: .ivy2
+        - name: jvm-tmp
+          mountPath: /opt/spark/jvm-tmp
+          subPath: jvm-tmp
+    executor:
+      instances: 2
+      cores: 1
+      memory: 512m
+      serviceAccount: spark-operator-spark
+      volumeMounts:
+        - name: spark-ivy
+          mountPath: /home/spark/.ivy2
+          subPath: .ivy2
+        - name: jvm-tmp
+          mountPath: /opt/spark/jvm-tmp
+          subPath: jvm-tmp
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 6215
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+    sparkConf:
+      spark.driver.extraJavaOptions: -Djava.io.tmpdir=/opt/spark/jvm-tmp
+      spark.executor.extraJavaOptions: -Djava.io.tmpdir=/opt/spark/jvm-tmp

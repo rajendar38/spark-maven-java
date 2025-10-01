@@ -1,0 +1,54 @@
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: ScheduledSparkApplication
+metadata:
+  name: hello-test1
+
+spec:
+  schedule: "@every 1m"
+  concurrencyPolicy: Forbid
+  
+  template:
+    type: Java
+    mode: cluster
+    image: rajendar38/complexsparkapp:latest
+    imagePullPolicy: IfNotPresent
+    mainClass: com.example.HelloWorld
+    mainApplicationFile: local:///opt/spark/examples/jars/helloworld-java.jar
+    sparkVersion: 3.4.0
+    restartPolicy:
+      type: Never
+    driver:
+      memory: 512m
+      serviceAccount: spark-operator-spark
+      securityContext:
+        runAsGroup: 185
+        runAsUser: 185
+        runAsNonRoot: true
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: true
+      volumeMounts:
+        - name: temp-volume
+          mountPath: /tmp
+    executor:
+      instances: 2
+      cores: 1
+      memory: 512m
+      serviceAccount: spark-operator-spark
+      securityContext:
+        runAsGroup: 185
+        runAsUser: 185
+        runAsNonRoot: true
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: true
+      volumeMounts:
+        - name: temp-volume
+          mountPath: /tmp
+    volumes:
+      - name: temp-volume
+        emptyDir: {}
