@@ -6,10 +6,10 @@ metadata:
 spec:
   type: Java
   mode: cluster
-  image: rajendar38/complexsparkapp:latest
-  imagePullPolicy: IfNotPresent
+  image: rajendar38/complexsparkapp:v1.0.0
+  imagePullPolicy: Always
   mainClass: com.example.HelloWorld
-  mainApplicationFile: local:///opt/spark/examples/jars/helloworld-java.jar
+  mainApplicationFile: local:///opt/spark/jars/helloworld-java.jar
   sparkVersion: 3.4.0
   restartPolicy:
     type: Never
@@ -38,7 +38,7 @@ spec:
       - name: spark-ivy
         mountPath: /home/spark/.ivy2
       - name: jvm-tmp
-        mountPath: /opt/spark/jvm-tmp
+        mountPath: /tmp              # ✅ writable /tmp
       - name: spark-workdir
         mountPath: /opt/spark/work-dir
     env:
@@ -61,7 +61,7 @@ spec:
       - name: spark-ivy
         mountPath: /home/spark/.ivy2
       - name: jvm-tmp
-        mountPath: /opt/spark/jvm-tmp
+        mountPath: /tmp              # ✅ writable /tmp
       - name: spark-workdir
         mountPath: /opt/spark/work-dir
     env:
@@ -69,5 +69,5 @@ spec:
         value: /home/spark/.ivy2
 
   sparkConf:
-    spark.driver.extraJavaOptions: -Djava.io.tmpdir=/opt/spark/jvm-tmp
-    spark.executor.extraJavaOptions: -Djava.io.tmpdir=/opt/spark/jvm-tmp
+    spark.driver.extraJavaOptions: -Djava.io.tmpdir=/tmp
+    spark.executor.extraJavaOptions: -Djava.io.tmpdir=/tmp
