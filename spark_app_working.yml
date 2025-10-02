@@ -1,0 +1,73 @@
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: spark-app-working
+  namespace: default
+spec:
+  type: Java
+  mode: cluster
+  image: rajendar38/complexsparkapp:latest
+  imagePullPolicy: IfNotPresent
+  mainClass: com.example.HelloWorld
+  mainApplicationFile: local:///opt/spark/examples/jars/helloworld-java.jar
+  sparkVersion: 3.4.0
+  restartPolicy:
+    type: Never
+
+  volumes:
+    - name: jvm-tmp
+      emptyDir:
+        sizeLimit: 750Mi
+    - name: spark-ivy
+      emptyDir:
+        sizeLimit: 750Mi
+    - name: spark-workdir
+      emptyDir: {}
+
+  driver:
+    memory: 512m
+    serviceAccount: spark-operator-spark
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 185
+      capabilities:
+        drop: [ "ALL" ]
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+    volumeMounts:
+      - name: spark-ivy
+        mountPath: /home/spark/.ivy2
+      - name: jvm-tmp
+        mountPath: /opt/spark/jvm-tmp
+      - name: spark-workdir
+        mountPath: /opt/spark/work-dir
+    env:
+      - name: SPARK_IVY_DIR
+        value: /home/spark/.ivy2
+
+  executor:
+    instances: 2
+    cores: 1
+    memory: 512m
+    serviceAccount: spark-operator-spark
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 185
+      capabilities:
+        drop: [ "ALL" ]
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+    volumeMounts:
+      - name: spark-ivy
+        mountPath: /home/spark/.ivy2
+      - name: jvm-tmp
+        mountPath: /opt/spark/jvm-tmp
+      - name: spark-workdir
+        mountPath: /opt/spark/work-dir
+    env:
+      - name: SPARK_IVY_DIR
+        value: /home/spark/.ivy2
+
+  sparkConf:
+    spark.driver.extraJavaOptions: -Djava.io.tmpdir=/opt/spark/jvm-tmp
+    spark.executor.extraJavaOptions: -Djava.io.tmpdir=/opt/spark/jvm-tmp
