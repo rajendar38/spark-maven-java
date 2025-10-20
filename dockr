@@ -1,0 +1,41 @@
+# -------------------------------------------------------------
+# ✅ BASE IMAGE: Official Apache Spark build (Hadoop 3, Java 11)
+# -------------------------------------------------------------
+FROM apache/spark:3.5.0
+
+# -------------------------------------------------------------
+# ✅ Define Spark environment
+# -------------------------------------------------------------
+ENV SPARK_HOME=/opt/spark
+ENV PATH=$SPARK_HOME/bin:$PATH
+WORKDIR $SPARK_HOME
+
+# -------------------------------------------------------------
+# ✅ Copy your application jar and any additional jars
+# -------------------------------------------------------------
+# Your main Spark job jar
+COPY myapp.jar $SPARK_HOME/app/myapp.jar
+
+# Optional: add user dependency jars
+COPY jars/ $SPARK_HOME/work-dir/jars/
+
+# -------------------------------------------------------------
+# ✅ Ensure conf/ and jars/ are part of the classpath
+# (Apache Spark startup scripts already do this,
+#  but we set it explicitly to avoid issues in custom images)
+# -------------------------------------------------------------
+ENV CLASSPATH=$SPARK_HOME/conf:$SPARK_HOME/jars/*:$SPARK_HOME/work-dir/jars/*
+
+# -------------------------------------------------------------
+# ✅ Set Spark config for user classpath priority
+# -------------------------------------------------------------
+ENV SPARK_SUBMIT_OPTS="--conf spark.driver.userClassPathFirst=true \
+                       --conf spark.executor.userClassPathFirst=true"
+
+# -------------------------------------------------------------
+# ✅ Default entrypoint: Use Spark’s original launcher
+# -------------------------------------------------------------
+ENTRYPOINT ["/opt/spark/bin/spark-submit"]
+
+# Example default command (override in YAML or CLI)
+CMD ["--class", "com.example.MainClass", "local:///opt/spark/app/myapp.jar"]
