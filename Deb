@@ -1,0 +1,3 @@
+kubectl get svc spark-simple-app-driver-svc -o wide
+kubectl get endpoints spark-simple-app-driver-svc
+kubectl get pod -l spark-role=driver -o wide
