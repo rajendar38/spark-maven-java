@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-simple-app-driver-svc
+  namespace: default
+  labels:
+    app: spark-simple-app
+spec:
+  selector:
+    spark-role: driver           # Selects the Spark driver pod
+    spark-app-name: spark-simple-app
+  ports:
+    - name: spark-ui
+      port: 4040                 # Service port inside the cluster
+      targetPort: 4040           # Pod port (Spark UI port)
+      protocol: TCP
+  type: ClusterIP                # Istio Gateway will route internally to this service
