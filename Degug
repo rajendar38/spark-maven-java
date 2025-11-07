@@ -1,0 +1,7 @@
+kubectl get svc spark-simple-app-driver-svc -o yaml
+kubectl get endpoints spark-simple-app-driver-svc
+kubectl get pods -l spark-role=driver --show-labels
+
+kubectl get pods -l spark-role=driver --show-labels
+kubectl get svc | grep driver
+kubectl get endpoints | grep driver
