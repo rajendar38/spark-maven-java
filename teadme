@@ -1,0 +1,11 @@
+Hi everyone 👋
+
+I’m running multiple SparkApplications on Kubernetes (using the Spark Operator), and I’m trying to expose each Spark UI through Istio.
+
+Right now, each Spark UI is always served at the default root path /, so when I route through an Istio VirtualService (e.g. /spark-app1, /spark-app2), the context path /spark-app1 just forwards to / inside the driver service — which causes 404s or routing conflicts.
+
+Is there any way to change or configure the Spark UI base path (context path) for each SparkApplication, so that each app can be served under a distinct route (like /spark-app1, /spark-app2) instead of /?
+
+If not, what’s the recommended pattern for running and exposing multiple Spark UIs behind a single ingress (e.g., Istio Gateway)?
+
+Thanks in advance!
