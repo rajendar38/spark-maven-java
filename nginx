@@ -1,0 +1,172 @@
+io vs Ingress-NGINX: What’s Happening, Why It Matters, and How to Migrate Safely
+
+Kubernetes networking has gone through a major shift in recent years.
+One of the biggest changes came with the announcement that the
+Ingress-NGINX controller is retiring in March 2026, leaving many teams
+unsure about their future traffic management strategy—especially
+clusters running both Ingress-NGINX and Istio.
+
+This article explains the retirement, how to check whether your cluster
+depends on Ingress-NGINX, and how Istio can become your complete,
+future-proof replacement.
+
+1. Background: What Is Ingress-NGINX?
+
+Ingress-NGINX has been the default and most widely used Kubernetes
+ingress controller for years. It translates Kubernetes Ingress resources
+into NGINX routing rules so external traffic can reach internal
+services.
+
+Teams chose it because it was simple, reliable, and widely supported.
+But it also had major limitations: growing security vulnerabilities, low
+maintainer bandwidth, overly flexible annotation mechanisms, and
+technical debt.
+
+These issues ultimately led to its official retirement announcement,
+effective March 2026.
+
+2. Why Ingress-NGINX Is Being Retired
+
+The Kubernetes community cited several reasons for ending development:
+
+-   Security concerns: recent critical CVEs highlighted design issues
+    that were difficult to fix.
+-   Lack of maintainers: only a handful of volunteers were maintaining a
+    project used by millions.
+-   Growth of modern alternatives like Istio, Gateway API, Envoy
+    Gateway, and Traefik.
+-   Technical debt: the annotation model created uncontrolled
+    configurations that were hard to audit.
+
+3. What About Clusters That Already Have Istio?
+
+If your cluster uses Istio, this is the best possible scenario.
+
+With Istio installed:
+
+-   You don’t need Ingress-NGINX at all
+-   Istio provides its own IngressGateway
+-   Routing is done with Gateway + VirtualService
+-   Istio provides strong security, mTLS, traffic control, and rich
+    routing
+
+In simple terms:
+
+-   Ingress-NGINX = Old, basic, being retired
+-   Istio IngressGateway = Modern, powerful, supported, future-proof
+
+4. How to Check If Your Cluster Depends on Ingress-NGINX
+
+Run:
+
+    kubectl get ingress -A
+
+If you see no results, you are not using the old Ingress mechanism.
+
+To check if Ingress resources use the NGINX controller:
+
+    kubectl get ingress -A -o yaml | grep ingressClassName
+
+If it shows:
+
+    ingressClassName: nginx
+
+Then those workloads must be migrated.
+
+5. If No Workloads Depend on Ingress-NGINX — Remove It
+
+To clean the cluster:
+
+    kubectl delete ns ingress-nginx
+
+Or:
+
+    helm uninstall ingress-nginx -n ingress-nginx
+
+6. How to Migrate Workloads from Ingress-NGINX to Istio
+
+Convert each Ingress into:
+
+-   a Gateway
+-   a VirtualService
+
+Before (NGINX Ingress)
+
+    apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      name: app
+    spec:
+      ingressClassName: nginx
+      rules:
+      - host: app.example.com
+        http:
+          paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: app
+                port:
+                  number: 80
+
+After (Istio Gateway + VirtualService)
+
+Gateway:
+
+    apiVersion: networking.istio.io/v1beta1
+    kind: Gateway
+    metadata:
+      name: app-gw
+    spec:
+      selector:
+        istio: ingressgateway
+      servers:
+      - port:
+          number: 80
+          name: http
+          protocol: HTTP
+        hosts:
+        - "app.example.com"
+
+VirtualService:
+
+    apiVersion: networking.istio.io/v1beta1
+    kind: VirtualService
+    metadata:
+      name: app
+    spec:
+      hosts:
+      - "app.example.com"
+      gateways:
+      - app-gw
+      http:
+      - route:
+        - destination:
+            host: app
+            port:
+              number: 80
+
+7. Should You Switch to Gateway API Instead?
+
+If you do not need full Istio service mesh features, you can migrate
+directly to a Gateway API controller such as:
+
+-   Istio (supports Gateway API)
+-   Envoy Gateway
+-   Traefik
+-   HAProxy
+
+But if you already run Istio, staying with Istio’s Gateway makes the
+most sense.
+
+8. Final Recommendation
+
+If your cluster has Istio:
+
+-   Stop using Ingress-NGINX
+-   Migrate all Ingress objects to Istio Gateway + VirtualService
+-   Delete the old NGINX controller once migration is complete
+
+You will end up with a cleaner cluster, a supported routing system, and
+no dependency on a retiring project.
