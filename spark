@@ -12,6 +12,60 @@ helm upgrade spark-operator spark-operator/spark-operator \
   --set image.tag=2.1.1 \
   --set "spark.jobNamespaces={test-ns}"
 
+lias kgsa='kubectl get sparkapplications'
+alias kgssa='kubectl get scheduledsparkapplications'
+alias kd='kubectl describe'
+alias kl='kubectl logs'
+alias ka='kubectl apply -f'
+alias kdelf='kubectl delete -f'
+# ======================
+# Kubernetes Aliases
+# ======================
+alias k=kubectl
+alias kg='kubectl get'
+alias kd='kubectl describe'
+alias ka='kubectl apply -f'
+alias kdel='kubectl delete'
+alias klo='kubectl logs -f'
+alias kex='kubectl exec -it'
+alias kctx='kubectl config use-context'
+alias kctxs='kubectl config get-contexts'
+alias kns='kubectl config set-context --current --namespace'
+
+# Shortcuts for common resources
+alias kgp='kubectl get pods'
+alias kgs='kubectl get svc'
+alias kgd='kubectl get deployments'
+alias kgn='kubectl get nodes'
+alias kgsec='kubectl get secrets'
+alias kgcm='kubectl get configmaps'
+alias kgj='kubectl get jobs'
+alias kge='kubectl get events --sort-by=.metadata.creationTimestamp'
+
+# Apply and delete recursively from folders
+alias kaf='kubectl apply -f'
+alias kdf='kubectl delete -f'
+
+# Switch namespace quickly (kns <name>)
+alias kn='kubectl config set-context --current --namespace'
+
+# View YAML
+alias ky='kubectl get -o yaml'
+alias kyd='kubectl describe'
+
+# Watch (live refresh)
+alias kgw='watch kubectl get'
+alias kgpw='watch kubectl get pods'
+alias kcsc='kubectl config set-context --current --namespace'
+alias kgr='kubectl get role'
+alias kgrb='kubectl get rolebinding'
+
+# Exec into first pod of a deployment
+kpod() { kubectl get pod -l app=$1 -o jsonpath="{.items[0].metadata.name}"; }
+kexec() { kubectl exec -it $(kpod $1) -- bash; }
+klog() { kubectl logs -f $(kpod $1); }
+                                                                                                                                                                                          165,0-1       99%
+
 
 
 helm upgrade test-sparkapp spark-operator/spark-operator \
