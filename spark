@@ -1,3 +1,19 @@
+helm install spark-operator spark-operator/spark-operator \
+  -n spark-operator \
+  --create-namespace \
+  --version 2.1.1 \
+  --set image.repository=dockerhub/kubeflow/spark-operator \
+  --set image.tag=2.1.1 \
+  --set "spark.jobNamespaces={test-ns}"
+helm upgrade spark-operator spark-operator/spark-operator \
+  -n spark-operator \
+  --version 2.1.1 \
+  --set image.repository=dockerhub/kubeflow/spark-operator \
+  --set image.tag=2.1.1 \
+  --set "spark.jobNamespaces={test-ns}"
+
+
+
 helm upgrade test-sparkapp spark-operator/spark-operator \
   --namespace default \
   --set "spark.jobNamespaces={test-ns}"
