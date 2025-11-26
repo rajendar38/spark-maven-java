@@ -1,0 +1,164 @@
+helm upgrade test-sparkapp spark-operator/spark-operator \
+  --namespace default \
+  --set "spark.jobNamespaces={test-ns}"
+
+
+helm upgrade test-sparkapp spark-operator/spark-operator \
+  --version 2.1.1 \
+  --set image.repository=dockerhub/kubeflow/spark-operator \
+  --set image.tag=2.1.1
+  --set "spark.jobNamespaces={test-ns}"
+
+rajendar@RZBOX:~/spark-java-maven-work/helloworld-spark$ k get role test-sparkapp-spark-operator-spark -n test-ns
+NAME                                 CREATED AT
+test-sparkapp-spark-operator-spark   2025-11-26T17:51:14Z
+rajendar@RZBOX:~/spark-java-maven-work/helloworld-spark$ k get role test-sparkapp-spark-operator-spark -n test-ns -o yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+    meta.helm.sh/release-name: test-sparkapp
+    meta.helm.sh/release-namespace: default
+  creationTimestamp: "2025-11-26T17:51:14Z"
+  labels:
+    app.kubernetes.io/instance: test-sparkapp
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: spark-operator
+    app.kubernetes.io/version: 2.3.0
+    helm.sh/chart: spark-operator-2.3.0
+  name: test-sparkapp-spark-operator-spark
+  namespace: test-ns
+  resourceVersion: "8786087"
+  uid: ea3fbad5-3512-4ba7-bb81-2700622b4225
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - configmaps
+  - persistentvolumeclaims
+  - services
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+  - deletecollection
+rajendar@RZBOX:~/spark-java-maven-work/helloworld-spark$ k get role test-sparkapp-spark-operator-controller -n test-ns -o yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+    meta.helm.sh/release-name: test-sparkapp
+    meta.helm.sh/release-namespace: default
+  creationTimestamp: "2025-11-26T17:51:14Z"
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: test-sparkapp
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: spark-operator
+    app.kubernetes.io/version: 2.3.0
+    helm.sh/chart: spark-operator-2.3.0
+  name: test-sparkapp-spark-operator-controller
+  namespace: test-ns
+  resourceVersion: "8786086"
+  uid: 8fddd39a-6339-418a-9b01-262152b979af
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+  - deletecollection
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - persistentvolumeclaims
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - update
+  - patch
+- apiGroups:
+  - extensions
+  - networking.k8s.io
+  resources:
+  - ingresses
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
+- apiGroups:
+  - sparkoperator.k8s.io
+  resources:
+  - sparkapplications
+  - scheduledsparkapplications
+  - sparkconnects
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - sparkoperator.k8s.io
+  resources:
+  - sparkapplications/status
+  - sparkapplications/finalizers
+  - scheduledsparkapplications/status
+  - scheduledsparkapplications/finalizers
+  - sparkconnects/status
+  verbs:
+  - get
+  - update
+  - patch
