@@ -1,3 +1,16 @@
+rajendar@RZBOX:~/spark-java-maven-work/helloworld-spark$ k get svc
+NAME                                                    TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
+details                                                 ClusterIP   10.108.184.0    <none>        9080/TCP                     20d
+kubernetes                                              ClusterIP   10.96.0.1       <none>        443/TCP                      64d
+productpage                                             ClusterIP   10.104.93.247   <none>        9080/TCP                     20d
+ratings                                                 ClusterIP   10.99.164.13    <none>        9080/TCP                     20d
+reviews                                                 ClusterIP   10.99.37.154    <none>        9080/TCP                     20d
+schedule-spark-app-working-1764183525001498378-ui-svc   ClusterIP   10.96.236.119   <none>        4040/TCP                     29m
+schedule-spark-app-working-1764183585000872878-ui-svc   ClusterIP   10.103.69.7     <none>        4040/TCP                     28m
+spark-a0ec039ac1893cc6-driver-svc                       ClusterIP   None            <none>        7078/TCP,7079/TCP,4040/TCP   28m
+spark-app-working-ui-svc                                ClusterIP   10.101.15.220   <none>        4040/TCP                     4d20h
+
+
 helm install spark-operator spark-operator/spark-operator \
   -n spark-operator \
   --create-namespace \
