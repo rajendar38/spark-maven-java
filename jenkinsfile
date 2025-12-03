@@ -1,0 +1,46 @@
+pipeline {
+    agent any
+
+    parameters {
+        choice(
+            name: 'UAT_ENV',
+            choices: ['UAT1', 'UAT2', 'UAT3'],
+            description: 'Select UAT environment'
+        )
+    }
+
+    stages {
+        stage('Setup Environment') {
+            steps {
+                script {
+                    switch (params.UAT_ENV) {
+                        case 'UAT1':
+                            env.KAFKA_GROUP = "consumer-group-uat1"
+                            break
+                        case 'UAT2':
+                            env.KAFKA_GROUP = "consumer-group-uat2"
+                            break
+                        case 'UAT3':
+                            env.KAFKA_GROUP = "consumer-group-uat3"
+                            break
+                    }
+                    echo "Kafka Group: ${env.KAFKA_GROUP}"
+                }
+            }
+        }
+
+        stage('Update Config') {
+            steps {
+                sh """
+                    sed -i 's/^kafka.group.id=.*/kafka.group.id=${KAFKA_GROUP}/' config/application.properties
+                """
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh "./mvnw clean package"
+            }
+        }
+    }
+}
