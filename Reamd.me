@@ -1,0 +1,51 @@
+                Kubernetes Pod
+┌─────────────────────────────────────────────┐
+│                                             │
+│   LIS Spring Boot Application               │
+│                                             │
+│   Request comes in                          │
+│        ↓                                    │
+│   creates audit event                       │
+│        ↓                                    │
+│   writes JSON                               │
+│        ↓                                    │
+│   /var/log/app/*.log                        │
+│        │                                    │
+│        │ shared log location                │
+│        ↓                                    │
+│   ┌────────────────────┐                    │
+│   │    Fluent Bit      │                    │
+│   │                    │                    │
+│   │ tail input         │                    │
+│   │     ↓              │                    │
+│   │ JSON parser        │                    │
+│   │     ↓              │                    │
+│   │ nested parser      │                    │
+│   │     ↓              │                    │
+│   │ Lua transform      │                    │
+│   │     ↓              │                    │
+│   │ add podName        │                    │
+│   │ add clusterName    │                    │
+│   │ add serviceName    │                    │
+│   │     ↓              │                    │
+│   │ Kafka OUTPUT       │                    │
+│   └────────┬───────────┘                    │
+│            │                                │
+└────────────┼────────────────────────────────┘
+             │
+             │ SSL/TLS + Kafka certificate
+             ↓
+       ┌──────────────┐
+       │    Kafka     │
+       │              │
+       │ lis.fluent.  │
+       │ logging-poc  │
+       └──────┬───────┘
+              │
+              │ consumer group
+              │ lis-fluentbit-poc-CG1
+              ↓
+       ┌──────────────────┐
+       │ LIS Audit        │
+       │ Listener         │
+       └──────────────────┘
