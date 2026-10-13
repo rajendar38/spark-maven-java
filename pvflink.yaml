@@ -1,0 +1,57 @@
+apiVersion: flink.apache.org/v1beta1
+kind: FlinkDeployment
+metadata:
+  name: flink-state-demo
+  namespace: flink-poc
+
+spec:
+  image: flink:1.20
+  flinkVersion: v1_20
+  serviceAccount: flink
+
+  flinkConfiguration:
+    taskmanager.numberOfTaskSlots: "1"
+
+    # Automatically checkpoint every 30 seconds
+    execution.checkpointing.interval: "30s"
+
+    # Write checkpoints to the PVC
+    execution.checkpointing.storage: filesystem
+    execution.checkpointing.dir: "file:///flink-state/checkpoints"
+
+    # Savepoint directory
+    execution.checkpointing.savepoint-dir: "file:///flink-state/savepoints"
+
+    # Retain checkpoints after cancellation
+    execution.checkpointing.externalized-checkpoint-retention: "RETAIN_ON_CANCELLATION"
+    execution.checkpointing.num-retained: "3"
+
+  podTemplate:
+    spec:
+      containers:
+        - name: flink-main-container
+          volumeMounts:
+            - name: flink-storage
+              mountPath: /flink-state
+
+      volumes:
+        - name: flink-storage
+          persistentVolumeClaim:
+            claimName: flink-state-pvc
+
+  jobManager:
+    resources:
+      requests:
+        memory: "1024Mi"
+        cpu: "500m"
+
+  taskManager:
+    resources:
+      requests:
+        memory: "1024Mi"
+        cpu: "500m"
+
+  job:
+    jarURI: local:///opt/flink/examples/streaming/StateMachineExample.jar
+    parallelism: 1
+    upgradeMode: savepoint
