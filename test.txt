@@ -1,0 +1,313 @@
+# Apache Flink Deployment Architecture on OpenShift – POC Comparison
+
+**Purpose:** Compare two Apache Flink Proofs of Concept (POCs) implemented on Red Hat OpenShift and clarify the differences between Standalone Kubernetes, Native Kubernetes, Kubernetes Operator, Application Mode, and Session Mode.
+
+**Platform:** Red Hat OpenShift / Kubernetes  
+**Technology:** Apache Flink, Apache Flink Kubernetes Operator, Helm
+
+---
+
+## 1. Executive Summary
+
+Two approaches were evaluated for deploying Apache Flink on OpenShift.
+
+**POC 1 – Manual Standalone Kubernetes Deployment**
+
+The Flink cluster was deployed using individual Kubernetes manifests for JobManager, TaskManager, ConfigMap, and Service. Flink jobs were submitted to the running cluster using Flink CLI or REST API.
+
+**POC 2 – Apache Flink Kubernetes Operator Deployment**
+
+The Flink Kubernetes Operator was installed using Helm. A `FlinkDeployment` Custom Resource was created to provision and manage the Flink cluster. Flink jobs were subsequently submitted to the cluster.
+
+**Key Finding:** Both approaches run Apache Flink on OpenShift. The primary difference is how the Flink cluster is provisioned, managed, and reconciled.
+
+The manual approach is consistent with Standalone Kubernetes deployment. The Operator approach supports both Native Kubernetes and Standalone Kubernetes deployment modes.
+
+---
+
+## 2. Architecture Comparison
+
+### POC 1 – Manual Standalone Kubernetes
+
+```text
+OpenShift Cluster
+│
+├── ConfigMap
+│   └── flink-conf.yaml
+│
+├── JobManager Deployment
+│   └── JobManager Pod
+│
+├── TaskManager Deployment
+│   └── TaskManager Pod(s)
+│
+├── Kubernetes Service
+│   ├── JobManager RPC
+│   └── Flink REST API (8081)
+│
+└── Flink Job Submission
+    ├── Flink CLI
+    └── REST API
+```
+
+The team manually defines and manages the Kubernetes resources required to run the Flink cluster.
+
+### POC 2 – Flink Kubernetes Operator
+
+```text
+OpenShift Cluster
+│
+├── Flink Kubernetes Operator
+│   ├── Operator Deployment
+│   ├── Operator ServiceAccount
+│   ├── Roles / ClusterRoles
+│   └── RoleBindings / ClusterRoleBindings
+│
+├── FlinkDeployment Custom Resource
+│   ├── Flink Image / Version
+│   ├── JobManager Configuration
+│   ├── TaskManager Configuration
+│   ├── Resource Requirements
+│   └── Optional Job Configuration
+│
+├── Operator Reconciliation
+│   └── Flink Cluster
+│       ├── JobManager
+│       ├── TaskManager(s)
+│       └── Kubernetes Services
+│
+└── Flink Job Submission
+    ├── FlinkDeployment (Application Mode)
+    ├── FlinkSessionJob (Session Mode)
+    └── CLI / REST API
+```
+
+The Operator continuously reconciles the desired Flink cluster configuration with the actual Kubernetes resources.
+
+---
+
+## 3. Native Kubernetes vs Standalone Kubernetes
+
+| Feature | Native Kubernetes | Standalone Kubernetes |
+|---|---|---|
+| Cluster resource management | Flink Kubernetes integration | Externally managed |
+| JobManager provisioning | Flink integration / Operator | Kubernetes manifests / Operator |
+| TaskManager provisioning | Flink dynamically manages TaskManager Pods | Explicitly managed Deployments/replicas |
+| Kubernetes API permissions for Flink | Required | Generally not required |
+| Dynamic TaskManager allocation | Supported | Externally controlled |
+| Kubernetes Operator required | No | No |
+| Kubernetes Operator supported | Yes | Yes |
+| Application Mode | Supported | Supported |
+| Session Mode | Supported | Supported |
+
+**Important:** Native Kubernetes and Kubernetes Operator are not synonymous. The Operator is a separate management layer that can use either Native or Standalone deployment mode.
+
+---
+
+## 4. Application Mode vs Session Mode
+
+### Application Mode
+
+In Application Mode, a dedicated Flink cluster is created for an application.
+
+```text
+Application A
+    │
+    └── Flink Cluster A
+        ├── JobManager A
+        └── TaskManagers A
+
+Application B
+    │
+    └── Flink Cluster B
+        ├── JobManager B
+        └── TaskManagers B
+```
+
+**Characteristics:**
+
+- Dedicated cluster resources for each application.
+- Better isolation between applications.
+- Independent application lifecycle.
+- Suitable for production streaming applications requiring isolation.
+- In Operator deployments, commonly configured using `FlinkDeployment.spec.job`.
+
+### Session Mode
+
+In Session Mode, a shared Flink cluster runs multiple jobs.
+
+```text
+Shared Flink Cluster
+│
+├── JobManager
+│
+├── TaskManager(s)
+│
+├── Flink Job A
+├── Flink Job B
+└── Flink Job C
+```
+
+**Characteristics:**
+
+- Multiple jobs share the same Flink cluster.
+- Resource sharing can improve utilization.
+- Individual jobs can be submitted and cancelled independently.
+- Cluster-level failures may affect multiple jobs.
+- In Operator deployments, a `FlinkDeployment` without `spec.job` creates a Session cluster.
+- Operator-managed session jobs are represented by `FlinkSessionJob` resources.
+
+---
+
+## 5. ServiceAccount and RBAC Differences
+
+### Manual Standalone Kubernetes Deployment
+
+In the manual Standalone approach, the JobManager and TaskManager generally do not need Kubernetes API permissions to provision new cluster resources.
+
+If no ServiceAccount is explicitly configured, Kubernetes normally assigns the namespace's default ServiceAccount.
+
+Therefore, explicit Role, RoleBinding, and custom ServiceAccount manifests may not be required.
+
+### Operator-Managed Deployment
+
+The Flink Kubernetes Operator requires permissions to monitor custom resources and manage Kubernetes resources.
+
+Typical components include:
+
+- Operator ServiceAccount.
+- Role or ClusterRole.
+- RoleBinding or ClusterRoleBinding.
+- Flink workload ServiceAccount.
+- Additional permissions for Native Kubernetes resource management.
+
+On OpenShift, Security Context Constraints (SCC) must also be considered.
+
+**Key Difference:** The Operator needs Kubernetes API permissions for reconciliation. Native Flink clusters also require permissions to manage Kubernetes resources, especially TaskManager Pods.
+
+---
+
+## 6. Comparison of Both POCs
+
+| Category | POC 1 – Manual | POC 2 – Operator |
+|---|---|---|
+| Deployment method | Kubernetes YAML | Helm + FlinkDeployment |
+| Management layer | Kubernetes workload controllers | Flink Kubernetes Operator |
+| Resource mode | Standalone | Native or Standalone |
+| JobManager configuration | Manually defined | Custom Resource |
+| TaskManager configuration | Manually defined | Custom Resource |
+| ConfigMap | Manually maintained | Operator/Flink-managed depending on mode |
+| Cluster reconciliation | Kubernetes resources | Flink-aware Operator reconciliation |
+| Job submission | CLI / REST API | Custom Resource / CLI / REST API |
+| Application Mode | Supported | Supported |
+| Session Mode | Supported | Supported |
+| RBAC requirements | Workload-dependent | Operator RBAC required |
+| Upgrades and recovery | Manual procedures and Kubernetes controllers | Operator-assisted lifecycle management |
+
+---
+
+## 7. OpenShift Validation Commands
+
+Check the FlinkDeployment configuration:
+
+```bash
+oc get flinkdeployment advanced-ingress \
+  -n flink-poc -o yaml
+```
+
+Check Native or Standalone mode:
+
+```bash
+oc get flinkdeployment advanced-ingress \
+  -n flink-poc \
+  -o jsonpath='{.spec.mode}{"\n"}'
+```
+
+If the field is omitted, the Operator normally uses Native mode by default, subject to the installed Operator's configuration.
+
+Check whether an Application job is defined:
+
+```bash
+oc get flinkdeployment advanced-ingress \
+  -n flink-poc \
+  -o jsonpath='{.spec.job}{"\n"}'
+```
+
+Check Operator-managed Session jobs:
+
+```bash
+oc get flinksessionjobs -n flink-poc
+```
+
+Check the Kubernetes resources:
+
+```bash
+oc get deployments,pods,svc,configmaps -n flink-poc
+```
+
+Check ServiceAccounts and RBAC:
+
+```bash
+oc get sa,roles,rolebindings -n flink-poc
+```
+
+---
+
+## 8. POC Findings
+
+**POC 1**
+
+- Demonstrated manual provisioning of a Flink cluster using Kubernetes resources.
+- Demonstrated job submission to a running Flink cluster.
+- Architecture is consistent with Standalone Kubernetes deployment.
+- Session Mode is likely if multiple jobs were submitted to a persistent shared cluster.
+
+**POC 2**
+
+- Demonstrated installation of the Flink Kubernetes Operator.
+- Demonstrated declarative Flink cluster provisioning using `FlinkDeployment`.
+- Demonstrated Flink job submission on OpenShift.
+- Native Kubernetes is the default Operator deployment mode unless overridden.
+- Application or Session Mode depends on the `FlinkDeployment` job configuration and submission method.
+
+---
+
+## 9. Recommendation
+
+For production OpenShift environments, an Operator-managed approach is generally preferable when automated reconciliation, declarative management, and application lifecycle operations are required.
+
+Native Kubernetes and Standalone Kubernetes should be evaluated based on resource management, scaling, RBAC, security policies, and operational requirements.
+
+Session Mode may be suitable for shared development or multi-job workloads, while Application Mode provides stronger workload isolation for independent production applications.
+
+The final architecture decision should consider workload isolation, resource efficiency, operational complexity, high availability, state management, checkpoints, savepoints, and upgrade requirements.
+
+---
+
+## 10. Official Apache Flink Documentation
+
+**Native Kubernetes Deployment**  
+https://nightlies.apache.org/flink/flink-docs-stable/docs/deployment/resource-providers/native_kubernetes/
+
+**Standalone Deployment**  
+https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/deployment/resource-providers/standalone/overview/
+
+**Flink Kubernetes Operator – Deployment Overview**  
+https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-release-1.16/docs/deployment/overview/
+
+**Flink Kubernetes Operator – Custom Resources**  
+https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-release-1.16/docs/custom-resource/overview/
+
+---
+
+## 11. Conclusion
+
+Both POCs successfully demonstrate Apache Flink deployment and job execution on OpenShift using different cluster management approaches.
+
+POC 1 uses manually provisioned Kubernetes resources and aligns with Standalone Kubernetes deployment.
+
+POC 2 uses the Apache Flink Kubernetes Operator for declarative cluster lifecycle management, with Native Kubernetes as the normal default deployment mode.
+
+**The central architectural distinction is cluster resource management, not the ability to execute Flink jobs.**
+
+Application Mode and Session Mode are separate workload lifecycle choices that can be used with either deployment architecture.
